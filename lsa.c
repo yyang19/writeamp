@@ -1,13 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "cola.h"
+#include "lsa.h"
 #include "sort.h"
 
-static void _insert( cola_t *, run_t *, int *, int );
+static void _insert( lsa_t *, lsa_run_t *, int *, int );
 
 int
-colaInit( cola_t *c, int r, int h ){
+lsaInit( lsa_t *c, int r, int h ){
 
     int i;
 
@@ -16,16 +16,16 @@ colaInit( cola_t *c, int r, int h ){
     c->runs = NULL;
     
     for( i=0; i<h; i++ )
-        colaGrow(c);
+        lsaGrow(c);
 
     return 0;
 }
 
 void
-colaDestroy( cola_t *c ){
+lsaDestroy( lsa_t *c ){
     
-    run_t *header = c->runs;
-    run_t *r;
+    lsa_run_t *header = c->runs;
+    lsa_run_t *r;
 
     while( header ){
         r = header;
@@ -36,16 +36,16 @@ colaDestroy( cola_t *c ){
 }
 
 int
-colaGrow( cola_t *c ){
+lsaGrow( lsa_t *c ){
 
     int i;
     int j;
-    run_t *r = c->runs;
-    run_t *new_run;
+    lsa_run_t *r = c->runs;
+    lsa_run_t *new_run;
 
     i = c->height;
     
-    new_run = (run_t *) malloc (sizeof(run_t)); 
+    new_run = (lsa_run_t *) malloc (sizeof(lsa_run_t)); 
 
     if( !new_run )
         return -1;
@@ -80,7 +80,7 @@ colaGrow( cola_t *c ){
 }
 
 int 
-colaInsert( cola_t *c, int key ){
+lsaInsert( lsa_t *c, int key ){
 
     _insert( c, c->runs, &key, 1 );
 
@@ -88,11 +88,11 @@ colaInsert( cola_t *c, int key ){
 }
 
 void
-colaDump( cola_t *c ){
+lsaDump( lsa_t *c ){
         
-    run_t *run = c->runs;
-    
-    printf("-----COLA dump-----\n");
+    lsa_run_t *run = c->runs;
+   
+    printf("-----LSA dump-----\n");
 #ifdef VERBOSE
     int i;
     while( run ){
@@ -118,7 +118,7 @@ colaDump( cola_t *c ){
 }
 
 static void
-_writePageNode( run_t *r, int key ){
+_writePageNode( lsa_run_t *r, int key ){
     
     assert( r->curr<r->len );
 
@@ -132,15 +132,17 @@ _writePageNode( run_t *r, int key ){
 }
 
 static void 
-_insert( cola_t *c, run_t *r, int *array, int count ){
+_insert( lsa_t *c, lsa_run_t *r, int *array, int count ){
    
-    int i, j;
+    int i,j;
     int *merged_array;
 
     if( r->curr == r->len ){
 
         if( ! r->next )
-            colaGrow(c);
+            lsaGrow(c);
+    
+        quicksort( r->array, 0, r->curr-1 );
 
         _insert( c, r->next, r->array, r->curr );
 
@@ -150,22 +152,29 @@ _insert( cola_t *c, run_t *r, int *array, int count ){
             _writePageNode( r, array[i] );
     }
     else{
-        j = r->curr;
-        assert( count+j <= r->len );
+        if( r->next ){ //not the lowest level
+            for( i=0; i<count; i++ )
+                _writePageNode( r, array[i] );
+        }
+        else{
 
-        merged_array = (int *) malloc (sizeof(int)*(count + j));
-        mergeSortedArrays( array, 
-                           count, 
-                           r->array,
-                           j,
-                           merged_array );
+            j = r->curr;
+            assert( count+j <= r->len );
 
-        r->curr = 0;
+            merged_array = (int *) malloc (sizeof(int)*(count + j));
+            mergeSortedArrays( array, 
+                               count, 
+                               r->array,
+                               j,
+                               merged_array );
 
-        for( i=0; i<count+j; i++ )
-            _writePageNode( r, merged_array[i] );
+            r->curr = 0;
 
-        free( merged_array );
+            for( i=0; i<count+j; i++ )
+                _writePageNode( r, merged_array[i] );
+
+            free( merged_array );
+        }
     }    
 
     return;

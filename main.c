@@ -6,39 +6,9 @@
 #include "random.h"
 
 #include "cola.h"
+#include "lsa.h"
 
-//#define VERBOSE (1)
 #define MAX (1<<10)
-
-void
-_print_stat( run_t *r ){
-    
-    run_t *run = r;
-    
-#ifdef VERBOSE
-    int i;
-    while( run ){
-        printf( "The run on level %d :", run->level );
-        for( i=0; i<run->curr; i++ )
-            if( run->array[i] != ~0 )
-                printf( "\t%d", run->array[i] );
-        printf( "\n" );
-
-        run = run->next;
-    };
-    
-    run = r;
-
-#endif
-
-    while( run ){
-        printf( "The run on level %d is written %d times\n", run->level, run->count_wr );
-        run = run->next;
-    };
-    
-
-    return ;
-}
 
 static void
 _help( void ){
@@ -55,6 +25,7 @@ int main( int argc, char *argv[] ){
     int *key_set;
 
     cola_t cola;
+    lsa_t lsa;
 
     if( argc<3 )
         goto help;
@@ -63,25 +34,37 @@ int main( int argc, char *argv[] ){
     if( result != 0 )
         goto out;
 
+    result = lsaInit( &lsa, atoi(argv[1]), 1 );
+    if( result != 0 ){
+        colaDestroy( &cola );
+        goto out;
+    }
+
     n = atoi( argv[2] );
 
     key_set = (int *) malloc ( sizeof(int) * MAX );
 
     create_random_array( key_set, MAX, MAX );
 
-    for( ki=1; ki<=n; ki++ )
+    for( ki=1; ki<=n; ki++ ){
         colaInsert( &cola, key_set[ki] );
+        lsaInsert( &lsa, key_set[ki] );
+    }
+
+    colaDump( &cola );
+    lsaDump( &lsa );
+
+    colaDestroy( &cola );
+    lsaDestroy( &lsa );
+
+    free(key_set);
+    
+    goto out;
 
 help:
     _help();
     result = -1;
 
 out:
-    _print_stat( cola.runs );
-
-    colaDestroy( &cola );
-
-    free(key_set);
-
     return result;
 }

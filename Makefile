@@ -5,8 +5,10 @@ C_FILES := $(wildcard *.c)
 OBJS := $(addprefix obj/,$(notdir $(C_FILES:.c=.o)))
 
 
-CFLAGS=-g -O0 --coverage -Wall
-CPPFLAGS=-g -O0 --coverage -Wall
+CFLAGS=-g -O0 --coverage -Wall 
+#CFLAGS+= -DVERBOSE
+CPPFLAGS=-g -O0 --coverage -Wall 
+#CPPFLAGS+= -DVERBOSE
 LDFLAGS=-g -O0 --coverage 
 LDLIBS= -lm
 

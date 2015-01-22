@@ -23,5 +23,5 @@ int colaInit( cola_t *, int, int );
 void colaDestroy( cola_t * );
 int colaGrow( cola_t * );
 int colaInsert( cola_t *, int );
-
+void colaDump( cola_t * );
 #endif
